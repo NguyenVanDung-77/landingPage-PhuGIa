@@ -1,35 +1,116 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "./LoginPage.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8080";
+
+const sleep = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const getRolePath = (role) => {
+  switch (String(role || "").toUpperCase()) {
+    case "ADMIN":
+      return "/admin";
+    case "USER":
+      return "/";
+    default:
+      return null;
+  }
+};
+
+async function getCurrentUserWithRetry(attempts = 4) {
+  let lastError;
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/auth/me`,
+        {
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (response.ok) {
+        const user = await response.json();
+
+        if (user?.enabled === false) {
+          throw new Error("Tài khoản đã bị khóa.");
+        }
+
+        if (getRolePath(user?.role) !== null) {
+          return user;
+        }
+
+        throw new Error(
+          "Tài khoản chưa được cấp quyền truy cập."
+        );
+      }
+
+      if (response.status === 403) {
+        throw new Error("Tài khoản không có quyền truy cập.");
+      }
+
+      lastError = new Error(
+        "Chưa xác minh được phiên đăng nhập."
+      );
+    } catch (error) {
+      lastError = error;
+
+      if (
+        error.message === "Tài khoản đã bị khóa." ||
+        error.message ===
+          "Tài khoản chưa được cấp quyền truy cập." ||
+        error.message ===
+          "Tài khoản không có quyền truy cập."
+      ) {
+        throw error;
+      }
+    }
+
+    if (attempt < attempts - 1) {
+      await sleep(400 * (attempt + 1));
+    }
+  }
+
+  throw lastError || new Error(
+    "Không thể xác minh phiên đăng nhập."
+  );
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const googleCheckedRef = useRef(false);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Chuyển hướng theo quyền tài khoản
-  const redirectByRole = (user) => {
-    if (user.role === "ADMIN") {
-      navigate("/admin", { replace: true });
-    } else if (user.role === "USER") {
-      navigate("/", { replace: true });
-    } else {
+  const redirectByRole = (role) => {
+    const destination = getRolePath(role);
+
+    if (destination === null) {
       throw new Error(
         "Tài khoản chưa được cấp quyền truy cập."
       );
     }
+
+    navigate(destination, { replace: true });
   };
 
-  // Kiểm tra phiên đăng nhập sau khi Google chuyển về React
+  // Kiểm tra đăng nhập Google sau khi backend chuyển về
   useEffect(() => {
     const googleStatus = searchParams.get("google_login");
 
@@ -44,53 +125,44 @@ export default function LoginPage() {
       return;
     }
 
-    let cancelled = false;
+    if (googleCheckedRef.current) {
+      return;
+    }
 
-    const checkGoogleLogin = async () => {
+    googleCheckedRef.current = true;
+
+    let active = true;
+
+    const verifyGoogleLogin = async () => {
       setGoogleLoading(true);
       setError("");
 
       try {
-        const response = await fetch(
-          `${API_BASE}/api/auth/me`,
-          {
-            credentials: "include",
-          }
+        const user = await getCurrentUserWithRetry(5);
+
+        if (!active) return;
+
+        redirectByRole(user.role);
+      } catch (err) {
+        if (!active) return;
+
+        setError(
+          err.message ||
+            "Không thể xác minh đăng nhập Google."
         );
 
-        if (!response.ok) {
-          throw new Error(
-            "Không thể xác minh phiên đăng nhập Google."
-          );
-        }
-
-        const user = await response.json();
-
-        if (cancelled) return;
-
-        redirectByRole(user);
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err.message ||
-              "Có lỗi xảy ra khi đăng nhập Google."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setGoogleLoading(false);
-        }
+        setGoogleLoading(false);
       }
     };
 
-    checkGoogleLogin();
+    verifyGoogleLogin();
 
     return () => {
-      cancelled = true;
+      active = false;
     };
-  }, [navigate, searchParams]);
+  }, [searchParams, navigate]);
 
-  // Đăng nhập bằng username/password
+  // Đăng nhập username/password
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -99,11 +171,16 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    let loginSucceeded = false;
+
     try {
       const csrfResponse = await fetch(
         `${API_BASE}/api/auth/csrf`,
         {
           credentials: "include",
+          headers: {
+            Accept: "application/json",
+          },
         }
       );
 
@@ -114,6 +191,12 @@ export default function LoginPage() {
       }
 
       const csrf = await csrfResponse.json();
+
+      if (!csrf?.headerName || !csrf?.token) {
+        throw new Error(
+          "Không nhận được mã bảo mật CSRF."
+        );
+      }
 
       const body = new URLSearchParams({
         username: username.trim(),
@@ -128,6 +211,7 @@ export default function LoginPage() {
           headers: {
             "Content-Type":
               "application/x-www-form-urlencoded",
+            Accept: "application/json",
             [csrf.headerName]: csrf.token,
           },
           body: body.toString(),
@@ -141,45 +225,66 @@ export default function LoginPage() {
           );
         }
 
+        if (loginResponse.status === 403) {
+          throw new Error(
+            "Phiên bảo mật đã hết hạn hoặc tài khoản không được phép đăng nhập. Vui lòng thử lại."
+          );
+        }
+
         throw new Error(
           "Đăng nhập thất bại. Vui lòng thử lại."
         );
       }
 
-      const meResponse = await fetch(
-        `${API_BASE}/api/auth/me`,
-        {
-          credentials: "include",
-        }
-      );
+      let loginData = {};
 
-      if (!meResponse.ok) {
+      try {
+        loginData = await loginResponse.json();
+      } catch {
+        loginData = {};
+      }
+
+      if (loginData.success === false) {
         throw new Error(
-          "Không thể xác định quyền tài khoản."
+          loginData.message || "Đăng nhập thất bại."
         );
       }
 
-      const user = await meResponse.json();
+      loginSucceeded = true;
 
-      redirectByRole(user);
+      // Backend mới trả về role ngay khi đăng nhập thành công.
+      // Không phụ thuộc vào lần gọi /me tức thời.
+      if (getRolePath(loginData.role) !== null) {
+        redirectByRole(loginData.role);
+        return;
+      }
+
+      // Tương thích backend cũ nếu chưa deploy cập nhật.
+      const user = await getCurrentUserWithRetry(5);
+
+      redirectByRole(user.role);
     } catch (err) {
-      setError(
-        err.message || "Có lỗi xảy ra khi đăng nhập."
-      );
+      if (loginSucceeded) {
+        setError(
+          "Đăng nhập đã được chấp nhận nhưng chưa thể xác minh quyền. Vui lòng thử tải lại trang."
+        );
+      } else {
+        setError(
+          err.message || "Có lỗi xảy ra khi đăng nhập."
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Đăng nhập bằng Google OAuth2
+  // Đăng nhập Google OAuth2
   const handleGoogleLogin = () => {
     if (loading || googleLoading) return;
 
     setError("");
     setGoogleLoading(true);
 
-    // Spring Security xử lý xác thực Google.
-    // Không cần gửi mật khẩu Google qua React.
     window.location.assign(
       `${API_BASE}/oauth2/authorization/google`
     );
@@ -284,12 +389,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Phân cách hai phương thức đăng nhập */}
         <div className="pg-login-divider">
           <span>HOẶC</span>
         </div>
 
-        {/* Đăng nhập Google */}
         <button
           type="button"
           className="pg-login-google"
@@ -323,7 +426,7 @@ export default function LoginPage() {
 
           <span>
             {googleLoading
-              ? "Đang kết nối Google..."
+              ? "Đang xác minh Google..."
               : "Tiếp tục với Google"}
           </span>
         </button>

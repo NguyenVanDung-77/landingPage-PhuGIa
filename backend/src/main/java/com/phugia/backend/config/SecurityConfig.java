@@ -108,7 +108,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             GoogleAccountService googleAccountService,
-            UserDetailsService userDetailsService
+            UserDetailsService userDetailsService,
+            UserRepository userRepository
     ) throws Exception {
 
         HttpSessionSecurityContextRepository contextRepository =
@@ -187,9 +188,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // Lưu CSRF token trong session.
-                // Frontend lấy token qua /api/auth/csrf
-                // rồi gửi token trong header X-XSRF-TOKEN.
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepository)
                 )
@@ -200,35 +198,58 @@ public class SecurityConfig {
 
                 .formLogin(form -> form
 
-                        .loginProcessingUrl(
-                                "/api/auth/login"
-                        )
+                        .loginProcessingUrl("/api/auth/login")
 
                         .usernameParameter("username")
                         .passwordParameter("password")
 
                         .successHandler(
                                 (request, response, authentication) -> {
+
+                                    User user = userRepository
+                                            .findByUsername(
+                                                    authentication.getName()
+                                            )
+                                            .orElseThrow(() ->
+                                                    new IllegalStateException(
+                                                            "Không tìm thấy tài khoản"
+                                                    )
+                                            );
+
                                     response.setStatus(200);
+                                    response.setCharacterEncoding("UTF-8");
                                     response.setContentType(
                                             "application/json;charset=UTF-8"
                                     );
+
+                                    String role = user.getRole();
+
+                                    String redirectUrl =
+                                            "ADMIN".equals(role)
+                                                    ? "/admin"
+                                                    : "/";
+
                                     response.getWriter().write(
                                             "{\"success\":true," +
-                                            "\"message\":\"Đăng nhập thành công\"}"
+                                            "\"message\":\"Đăng nhập thành công\"," +
+                                            "\"role\":\"" + role + "\"," +
+                                            "\"redirectUrl\":\"" + redirectUrl + "\"}"
                                     );
                                 }
                         )
 
                         .failureHandler(
                                 (request, response, exception) -> {
+
                                     response.setStatus(401);
+                                    response.setCharacterEncoding("UTF-8");
                                     response.setContentType(
                                             "application/json;charset=UTF-8"
                                     );
+
                                     response.getWriter().write(
                                             "{\"success\":false," +
-                                            "\"message\":\"Sai tài khoản hoặc mật khẩu\"}"
+                                            "\"message\":\"Tên đăng nhập hoặc mật khẩu không đúng\"}"
                                     );
                                 }
                         )
@@ -244,14 +265,11 @@ public class SecurityConfig {
                                         Object principal =
                                                 authentication.getPrincipal();
 
-                                        if (!(principal instanceof OidcUser)) {
+                                        if (!(principal instanceof OidcUser oidcUser)) {
                                             throw new IllegalStateException(
                                                     "Google không trả về OIDC User"
                                             );
                                         }
-
-                                        OidcUser oidcUser =
-                                                (OidcUser) principal;
 
                                         User localUser =
                                                 googleAccountService
@@ -296,17 +314,23 @@ public class SecurityConfig {
                                                 response
                                         );
 
+                                        String redirectUrl =
+                                                "ADMIN".equals(localUser.getRole())
+                                                        ? "/admin"
+                                                        : "/";
+
                                         response.sendRedirect(
                                                 frontendUrl +
-                                                "/login?google_login=success"
+                                                "/login?google_login=success" +
+                                                "&redirect=" + redirectUrl
                                         );
 
                                     } catch (Exception exception) {
+
                                         SecurityContextHolder.clearContext();
 
                                         if (request.getSession(false) != null) {
-                                            request.getSession(false)
-                                                    .invalidate();
+                                            request.getSession(false).invalidate();
                                         }
 
                                         response.sendRedirect(
@@ -319,6 +343,7 @@ public class SecurityConfig {
 
                         .failureHandler(
                                 (request, response, exception) -> {
+
                                     SecurityContextHolder.clearContext();
 
                                     if (request.getSession(false) != null) {
@@ -335,9 +360,7 @@ public class SecurityConfig {
 
                 .logout(logout -> logout
 
-                        .logoutUrl(
-                                "/api/auth/logout"
-                        )
+                        .logoutUrl("/api/auth/logout")
 
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
@@ -349,12 +372,15 @@ public class SecurityConfig {
 
                         .logoutSuccessHandler(
                                 (request, response, authentication) -> {
+
                                     SecurityContextHolder.clearContext();
 
                                     response.setStatus(200);
+                                    response.setCharacterEncoding("UTF-8");
                                     response.setContentType(
                                             "application/json;charset=UTF-8"
                                     );
+
                                     response.getWriter().write(
                                             "{\"success\":true," +
                                             "\"message\":\"Đăng xuất thành công\"}"
