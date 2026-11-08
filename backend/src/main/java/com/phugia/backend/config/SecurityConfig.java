@@ -5,6 +5,7 @@ import com.phugia.backend.entity.User;
 import com.phugia.backend.repository.UserRepository;
 import com.phugia.backend.service.GoogleAccountService;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,8 +33,17 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    private static final String FRONTEND_URL =
+    private static final String LOCAL_FRONTEND_URL =
             "http://localhost:5173";
+
+    private final String frontendUrl;
+
+    public SecurityConfig(
+            @Value("${FRONTEND_URL:http://localhost:5173}")
+            String frontendUrl
+    ) {
+        this.frontendUrl = frontendUrl.replaceAll("/+$", "");
+    }
 
     @Bean
     public UserDetailsService userDetailsService(
@@ -60,11 +70,13 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config =
-                new CorsConfiguration();
+        CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(
-                List.of(FRONTEND_URL)
+                List.of(
+                        LOCAL_FRONTEND_URL,
+                        frontendUrl
+                ).stream().distinct().toList()
         );
 
         config.setAllowedMethods(
@@ -78,9 +90,7 @@ public class SecurityConfig {
                 )
         );
 
-        config.setAllowedHeaders(
-                List.of("*")
-        );
+        config.setAllowedHeaders(List.of("*"));
 
         config.setAllowCredentials(true);
 
@@ -180,8 +190,6 @@ public class SecurityConfig {
                         )
                 )
 
-                // Không dùng HTTP Basic.
-                // Chỉ đăng nhập qua form React hoặc Google.
                 .httpBasic(httpBasic ->
                         httpBasic.disable()
                 )
@@ -285,7 +293,7 @@ public class SecurityConfig {
                                         );
 
                                         response.sendRedirect(
-                                                FRONTEND_URL +
+                                                frontendUrl +
                                                 "/login?google_login=success"
                                         );
 
@@ -298,7 +306,7 @@ public class SecurityConfig {
                                         }
 
                                         response.sendRedirect(
-                                                FRONTEND_URL +
+                                                frontendUrl +
                                                 "/login?google_login=error"
                                         );
                                     }
@@ -314,7 +322,7 @@ public class SecurityConfig {
                                     }
 
                                     response.sendRedirect(
-                                            FRONTEND_URL +
+                                            frontendUrl +
                                             "/login?google_login=error"
                                     );
                                 }
