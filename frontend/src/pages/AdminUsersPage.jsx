@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import "./AdminUsersPage.css";
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useOutletContext();

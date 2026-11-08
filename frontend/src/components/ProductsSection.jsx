@@ -1,7 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // Ảnh đặt trong frontend/public/images/
 const SALE_BACKGROUND = "/images/sale-bg.jpg";
