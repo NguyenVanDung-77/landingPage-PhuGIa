@@ -1,0 +1,324 @@
+
+.pg-header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 76px;
+  z-index: 20000;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: #ffffff;
+  border-bottom: 1px solid #e3eee6;
+  box-shadow: 0 3px 18px rgba(20, 80, 45, 0.1);
+}
+
+.pg-header-inner {
+  width: 100%;
+  max-width: 1600px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pg-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.pg-brand-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #16734a;
+  color: #ffffff;
+  border-radius: 11px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pg-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.pg-brand-text strong {
+  color: #166a46;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.pg-brand-text small {
+  color: #758579;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+}
+
+.pg-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pg-navigation > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #34443a;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s, background 0.2s;
+}
+
+.pg-navigation > a:hover {
+  color: #16804f;
+}
+
+/* Đăng ký tư vấn giống các mục menu khác */
+.pg-navigation > .pg-consult-link {
+  color: #34443a;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pg-navigation > .pg-consult-link:hover {
+  color: #16804f;
+}
+
+/* Chỉ nút Đăng nhập có nền xanh lá */
+.pg-navigation > .pg-login-button {
+  padding: 11px 17px;
+  border-radius: 8px;
+  background: #16734a;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.pg-navigation > .pg-login-button:hover {
+  background: #0e5838;
+  color: #ffffff;
+}
+
+.pg-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #16734a;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+@media (min-width: 1051px) {
+  .pg-navigation {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 1250px) and (min-width: 1051px) {
+  .pg-header-inner {
+    padding: 0 16px;
+    gap: 10px;
+  }
+
+  .pg-navigation {
+    gap: 9px;
+  }
+
+  .pg-navigation > a {
+    font-size: 11px;
+  }
+
+  .pg-navigation > .pg-login-button {
+    padding: 10px 12px;
+  }
+
+  .pg-brand-text strong {
+    font-size: 17px;
+  }
+}
+
+/* Tablet và điện thoại: menu thu gọn */
+@media (max-width: 1050px) {
+  .pg-header {
+    height: 68px;
+  }
+
+  .pg-header-inner {
+    padding: 0 18px;
+  }
+
+  .pg-menu-toggle {
+    display: block !important;
+  }
+
+  .pg-navigation {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: calc(100vh - 68px);
+    overflow-y: auto;
+    background: #ffffff;
+    padding: 15px 20px 22px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    border-bottom: 1px solid #e5eee8;
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.07);
+  }
+
+  .pg-navigation.is-open {
+    display: flex;
+  }
+
+  .pg-navigation > a,
+  .pg-navigation > .pg-consult-link {
+    display: flex;
+    justify-content: flex-start;
+    padding: 12px 8px;
+    font-size: 14px;
+  }
+
+  .pg-navigation > .pg-login-button {
+    margin-top: 10px;
+    padding: 13px 16px;
+    justify-content: center;
+    font-size: 14px;
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 480px) {
+  .pg-brand-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .pg-brand-text strong {
+    font-size: 17px;
+  }
+
+  .pg-brand-text small {
+    font-size: 10px;
+  }
+}
+
+
+
+
+
+
+/* ===================================
+   HEADER - TRẠNG THÁI ĐĂNG NHẬP
+=================================== */
+
+.pg-auth-loading {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.pg-user-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 190px;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.pg-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e4f3e8;
+  color: #16723a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pg-user-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-admin-button,
+.pg-logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 13px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pg-admin-button {
+  border: 1px solid #168046;
+  background: #168046;
+  color: #ffffff;
+}
+
+.pg-logout-button {
+  border: 1px solid #dce5df;
+  background: #ffffff;
+  color: #24553a;
+}
+
+.pg-admin-button:hover {
+  background: #116b39;
+}
+
+.pg-logout-button:hover {
+  background: #edf7f0;
+}
+
+.pg-logout-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .pg-user-name {
+    max-width: 100%;
+  }
+
+  .pg-admin-button,
+  .pg-logout-button {
+    width: 100%;
+  }
+}

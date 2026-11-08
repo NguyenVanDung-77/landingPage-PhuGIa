@@ -1,0 +1,328 @@
+
+.pg-footer {
+  background: #0d3022;
+  color: #ffffff;
+  font-family: "Segoe UI", Arial, sans-serif;
+  padding: 75px 0 0;
+}
+
+.pg-footer * {
+  box-sizing: border-box;
+}
+
+.pg-footer-container {
+  width: min(1200px, calc(100% - 48px));
+  margin: auto;
+}
+
+.pg-footer-main {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 65px;
+  padding-bottom: 65px;
+}
+
+.pg-footer-brand {
+  max-width: 380px;
+}
+
+.pg-footer-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 105px;
+  height: 105px;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.pg-footer-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pg-footer-brand h2 {
+  font-family: Georgia, serif;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin: 0 0 18px;
+  color: #ffffff;
+}
+
+.pg-footer-brand p {
+  color: #b8cfc1;
+  font-size: 14px;
+  line-height: 1.9;
+  margin: 0;
+}
+
+.pg-footer-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 17px;
+}
+
+.pg-footer-column h3 {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  margin: 10px 0 12px;
+}
+
+.pg-footer-column a,
+.pg-footer-column p {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #bdd3c5;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  text-decoration: none;
+  transition: color .2s ease, transform .2s ease;
+}
+
+.pg-footer-column a:hover {
+  color: #9df0b3;
+  transform: translateX(4px);
+}
+
+.pg-footer-contact-icon {
+  color: #9df0b3;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.pg-footer-bottom {
+  border-top: 1px solid rgba(255,255,255,.14);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 25px 0;
+  color: #9fb9aa;
+  font-size: 12px;
+}
+
+/* ==================================
+   ZALO + HOTLINE FLOATING
+================================== */
+
+.pg-floating-contact {
+  position: fixed;
+  right: 23px;
+  bottom: 28px;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.pg-float-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  width: 60px;
+  height: 60px;
+}
+
+.pg-float-circle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  color: white;
+  box-shadow: 0 5px 20px rgba(0,0,0,.22);
+  animation: pgFloatBounce 2.8s ease-in-out infinite;
+  transition: transform .25s ease;
+}
+
+.pg-float-item:hover .pg-float-circle {
+  transform: scale(1.12);
+  animation-play-state: paused;
+}
+
+.pg-float-item::before,
+.pg-float-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: pgRipple 2.5s ease-out infinite;
+}
+
+.pg-float-item::after {
+  animation-delay: 1.25s;
+}
+
+.pg-float-zalo {
+  color: #087bfa;
+}
+
+.pg-float-zalo .pg-float-circle {
+  background: linear-gradient(145deg, #168dff, #0068e6);
+}
+
+.pg-zalo-text {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  font-style: italic;
+  color: #ffffff;
+  letter-spacing: -.8px;
+}
+
+.pg-float-hotline {
+  color: #18a858;
+}
+
+.pg-float-hotline .pg-float-circle {
+  background: linear-gradient(145deg, #26c66a, #087d3c);
+  animation-delay: .5s;
+}
+
+.pg-float-hotline svg {
+  color: white;
+  animation: pgPhoneShake 2.7s ease-in-out infinite;
+}
+
+.pg-float-tooltip {
+  position: absolute;
+  right: 72px;
+  top: 50%;
+  transform: translateY(-50%) translateX(8px);
+  white-space: nowrap;
+  background: #ffffff;
+  color: #153b28;
+  padding: 11px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 5px 20px rgba(0,0,0,.13);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all .2s ease;
+}
+
+.pg-float-item:hover .pg-float-tooltip,
+.pg-float-item:focus-visible .pg-float-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+@keyframes pgRipple {
+  0% {
+    transform: scale(.85);
+    opacity: .65;
+  }
+  80%, 100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+@keyframes pgFloatBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes pgPhoneShake {
+  0%, 75%, 100% {
+    transform: rotate(0deg);
+  }
+  80% {
+    transform: rotate(-15deg);
+  }
+  85% {
+    transform: rotate(15deg);
+  }
+  90% {
+    transform: rotate(-10deg);
+  }
+  95% {
+    transform: rotate(10deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .pg-footer-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .pg-footer {
+    padding-top: 50px;
+  }
+
+  .pg-footer-main {
+    grid-template-columns: 1fr;
+    gap: 35px;
+    padding-bottom: 45px;
+  }
+
+  .pg-footer-brand {
+    max-width: 100%;
+  }
+
+  .pg-footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pg-floating-contact {
+    right: 13px;
+    bottom: 20px;
+    gap: 16px;
+  }
+
+  .pg-float-item {
+    width: 52px;
+    height: 52px;
+  }
+
+  .pg-float-circle {
+    width: 50px;
+    height: 50px;
+  }
+
+  .pg-zalo-text {
+    font-size: 16px;
+  }
+
+  .pg-float-tooltip {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-float-item::before,
+  .pg-float-item::after,
+  .pg-float-circle,
+  .pg-float-hotline svg {
+    animation: none;
+  }
+}

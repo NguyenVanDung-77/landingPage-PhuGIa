@@ -1,0 +1,163 @@
+
+.pg-hero {
+  position: relative;
+  min-height: 690px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #123d2a;
+}
+
+.pg-hero-background {
+  position: absolute;
+  inset: 0;
+  background-image: url("/images/phugia-banner.jpg");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(1.02);
+}
+
+.pg-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(5, 39, 25, 0.88) 0%,
+    rgba(10, 53, 34, 0.74) 43%,
+    rgba(10, 53, 34, 0.16) 100%
+  );
+}
+
+.pg-hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 110px 60px 140px;
+}
+
+.pg-hero-label {
+  display: inline-flex;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #d6f4de;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  border-radius: 5px;
+  margin-bottom: 28px;
+}
+
+.pg-hero h1 {
+  max-width: 830px;
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(38px, 5vw, 66px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -1.5px;
+}
+
+.pg-hero h1 span {
+  display: block;
+  color: #a5e5b5;
+}
+
+.pg-hero-content p {
+  max-width: 650px;
+  margin: 28px 0 0;
+  color: #e4f0e7;
+  font-size: 17px;
+  line-height: 1.9;
+}
+
+.pg-hero-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 36px;
+}
+
+.pg-hero-primary,
+.pg-hero-secondary {
+  padding: 16px 28px;
+  border-radius: 7px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.pg-hero-primary {
+  background: #ffffff;
+  color: #14683f;
+}
+
+.pg-hero-primary:hover {
+  background: #e1f3e6;
+}
+
+.pg-hero-secondary {
+  border: 1px solid #ffffff;
+  color: #ffffff;
+}
+
+.pg-hero-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.pg-hero-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  min-height: 65px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  background: rgba(10, 50, 31, 0.75);
+  backdrop-filter: blur(8px);
+  color: #e1f3e6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 768px) {
+  .pg-hero {
+    min-height: 660px;
+  }
+
+  .pg-hero-content {
+    padding: 80px 24px 130px;
+  }
+
+  .pg-hero-overlay {
+    background: rgba(6, 40, 25, 0.74);
+  }
+
+  .pg-hero h1 {
+    font-size: 38px;
+    letter-spacing: -0.5px;
+  }
+
+  .pg-hero-content p {
+    font-size: 15px;
+  }
+
+  .pg-hero-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pg-hero-bottom {
+    gap: 15px;
+    flex-wrap: wrap;
+    padding: 16px;
+    font-size: 9px;
+    text-align: center;
+  }
+}

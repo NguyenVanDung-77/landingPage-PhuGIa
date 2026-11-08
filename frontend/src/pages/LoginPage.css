@@ -1,0 +1,263 @@
+
+.pg-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 18px;
+  background:
+    radial-gradient(circle at 15% 20%, #dcefe3 0, transparent 35%),
+    radial-gradient(circle at 85% 80%, #e6f4e9 0, transparent 35%),
+    #f5f9f6;
+  font-family: Arial, sans-serif;
+}
+
+.pg-login-card {
+  width: 100%;
+  max-width: 450px;
+  background: #ffffff;
+  border: 1px solid #e0eae3;
+  border-radius: 22px;
+  padding: 38px 34px;
+  box-shadow: 0 20px 60px rgba(22, 90, 56, 0.09);
+}
+
+.pg-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #175c3b;
+}
+
+.pg-login-brand-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #176b43;
+  color: white;
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.pg-login-brand strong,
+.pg-login-brand small {
+  display: block;
+}
+
+.pg-login-brand strong {
+  font-size: 18px;
+  letter-spacing: 0.5px;
+}
+
+.pg-login-brand small {
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  margin-top: 3px;
+}
+
+.pg-login-heading {
+  margin-top: 38px;
+  margin-bottom: 30px;
+}
+
+.pg-login-eyebrow {
+  display: inline-block;
+  color: #238353;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.pg-login-heading h1 {
+  margin: 0;
+  font-size: 27px;
+  color: #183b2a;
+}
+
+.pg-login-heading p {
+  color: #728278;
+  line-height: 1.7;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.pg-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pg-login-form label {
+  color: #294b37;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pg-login-form > input,
+.pg-login-password input {
+  width: 100%;
+  height: 49px;
+  padding: 0 15px;
+  border: 1px solid #d9e5dc;
+  border-radius: 11px;
+  outline: none;
+  background: #fbfdfb;
+  color: #203e2c;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.pg-login-form input:focus {
+  border-color: #238353;
+  box-shadow: 0 0 0 3px rgba(35, 131, 83, 0.1);
+}
+
+.pg-login-password {
+  position: relative;
+}
+
+.pg-login-password input {
+  padding-right: 65px;
+}
+
+.pg-login-password button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #238353;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pg-login-error {
+  background: #fff1f1;
+  color: #b42323;
+  padding: 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pg-login-submit {
+  width: 100%;
+  height: 50px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 11px;
+  background: #176b43;
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.pg-login-submit:hover {
+  background: #105233;
+}
+
+.pg-login-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pg-login-footer {
+  margin-top: 27px;
+  padding-top: 20px;
+  border-top: 1px solid #edf2ee;
+  text-align: center;
+}
+
+.pg-login-footer a {
+  color: #238353;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .pg-login-card {
+    padding: 28px 22px;
+  }
+
+  .pg-login-heading h1 {
+    font-size: 23px;
+  }
+}
+
+
+
+
+
+/* ================================
+   GOOGLE LOGIN
+================================ */
+
+.pg-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0 18px;
+  color: #8a9690;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.pg-login-divider::before,
+.pg-login-divider::after {
+  content: "";
+  height: 1px;
+  background: #e5eae7;
+  flex: 1;
+}
+
+.pg-login-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid #d9e3dd;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #243a2e;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pg-login-google:hover:not(:disabled) {
+  background: #f3f9f5;
+  border-color: #79a88b;
+  box-shadow: 0 4px 14px rgba(22, 88, 48, 0.08);
+}
+
+.pg-login-google:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.pg-google-icon {
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .pg-login-google {
+    min-height: 46px;
+    font-size: 13px;
+  }
+}
