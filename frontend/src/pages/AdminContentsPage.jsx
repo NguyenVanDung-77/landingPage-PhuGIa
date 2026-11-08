@@ -363,6 +363,7 @@ export default function AdminContentsPage() {
     return response.json();
   }
 
+  
   async function uploadImage(file, csrf) {
     const formData = new FormData();
     formData.append("file", file);
@@ -396,18 +397,27 @@ export default function AdminContentsPage() {
     }
 
     const result = await response.json();
+    const imageUrl = String(result.url || "").trim();
 
-    if (
-      !result.url ||
-      !result.url.startsWith("/api/uploads/amenities/")
-    ) {
+    const isCloudinaryUrl =
+      /^https:\/\/res\.cloudinary\.com\/jev1urnf\/image\/upload\//i.test(
+        imageUrl
+      );
+
+    const isLegacyUrl =
+      /^\/api\/uploads\/amenities\/[a-f0-9-]{36}\.(jpg|png|webp)$/i.test(
+        imageUrl
+      );
+
+    if (!isCloudinaryUrl && !isLegacyUrl) {
       throw new Error(
         "Backend không trả về đường dẫn ảnh hợp lệ."
       );
     }
 
-    return result.url;
+    return imageUrl;
   }
+
 
   function validateImage(file) {
     if (

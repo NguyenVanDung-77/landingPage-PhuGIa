@@ -1,11 +1,13 @@
 
 package com.phugia.backend.controller;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.time.Duration;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,16 +32,10 @@ import java.util.UUID;
 @RequestMapping("/api/uploads/amenities")
 public class AmenityImageController {
 
-    // ==========================================
-    // THƯ MỤC LƯU ẢNH TIỆN ÍCH
-    //
-    // Khi chạy Maven trong thư mục backend:
-    // backend/uploads/amenities/
-    //
-    // KHÔNG ĐỤNG VÀO 3 ẢNH NỀN FRONTEND.
-    // ==========================================
+    private final Cloudinary cloudinary;
 
-    private final Path uploadDirectory =
+    // Giữ thư mục cũ để phục vụ ảnh đã upload trước đây.
+    private final Path legacyUploadDirectory =
             Paths.get("uploads", "amenities")
                     .toAbsolutePath()
                     .normalize();
@@ -46,11 +43,20 @@ public class AmenityImageController {
     private static final long MAX_FILE_SIZE =
             10L * 1024 * 1024;
 
+    private static final String UUID_PATTERN =
+            "(?i)[0-9a-f]{8}-[0-9a-f]{4}-" +
+            "[0-9a-f]{4}-[0-9a-f]{4}-" +
+            "[0-9a-f]{12}";
+
+    private static final String LEGACY_FILENAME_PATTERN =
+            UUID_PATTERN + "\\.(jpg|png|webp)";
+
+    public AmenityImageController(Cloudinary cloudinary) {
+        this.cloudinary = cloudinary;
+    }
+
     // ==========================================
-    // 1. ADMIN TẢI ẢNH LÊN
-    //
-    // POST /api/uploads/amenities
-    // FormData: file
+    // 1. UPLOAD ẢNH MỚI LÊN CLOUDINARY
     // ==========================================
 
     @PostMapping(
@@ -74,99 +80,98 @@ public class AmenityImageController {
             );
         }
 
-        // Kiểm tra chữ ký file thay vì chỉ
-        // dựa vào tên file do người dùng gửi.
-
         byte[] header;
 
         try (InputStream input = file.getInputStream()) {
             header = input.readNBytes(12);
         }
 
-        String extension = detectImageExtension(header);
-
-        if (extension == null) {
+        if (detectImageExtension(header) == null) {
             throw new ResponseStatusException(
                     HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                     "Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP."
             );
         }
 
-        // Tạo tên UUID để ảnh mới không ghi đè
-        // ảnh cũ hoặc 3 ảnh nền cố định.
+        String publicId = UUID.randomUUID().toString();
 
-        String filename =
-                UUID.randomUUID() + "." + extension;
+        Map<?, ?> uploadResult;
 
-        Files.createDirectories(uploadDirectory);
-
-        Path target = uploadDirectory
-                .resolve(filename)
-                .normalize();
-
-        // Chặn đường dẫn ra ngoài thư mục upload.
-
-        if (!target.getParent().equals(uploadDirectory)) {
+        try {
+            uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "phugia/amenities",
+                            "public_id", publicId,
+                            "resource_type", "image",
+                            "overwrite", false
+                    )
+            );
+        } catch (Exception e) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Đường dẫn ảnh không hợp lệ."
+                    HttpStatus.BAD_GATEWAY,
+                    "Không thể tải ảnh lên Cloudinary.",
+                    e
             );
         }
 
-        try (InputStream input = file.getInputStream()) {
-            Files.copy(input, target);
+        Object secureUrl = uploadResult.get("secure_url");
+        Object cloudPublicId = uploadResult.get("public_id");
+
+        if (!(secureUrl instanceof String imageUrl)
+                || !imageUrl.startsWith(
+                        "https://res.cloudinary.com/")) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Cloudinary không trả về URL hợp lệ."
+            );
         }
 
-        // Đường dẫn USER sử dụng để xem ảnh.
-
-        String imageUrl =
-                "/api/uploads/amenities/" + filename;
+        String savedPublicId =
+                cloudPublicId instanceof String id
+                        ? id
+                        : "phugia/amenities/" + publicId;
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(Map.of(
                         "success", "true",
-                        "filename", filename,
+                        "filename", savedPublicId,
                         "url", imageUrl,
                         "message", "Tải ảnh thành công"
                 ));
     }
 
     // ==========================================
-    // 2. USER VÀ ADMIN XEM ẢNH
-    //
-    // GET /api/uploads/amenities/{filename}
+    // 2. GET ẢNH CŨ TỪ Ổ ĐĨA BACKEND
     // ==========================================
 
     @GetMapping("/{filename:.+}")
-    public ResponseEntity<Resource> getImage(
+    public ResponseEntity<Resource> getLegacyImage(
             @PathVariable String filename
     ) throws IOException {
 
-        Path file = resolveSafeFile(filename);
+        Path file = resolveLegacyFile(filename);
 
         if (!Files.isRegularFile(file)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Không tìm thấy ảnh."
+                    "Ảnh cũ không còn trên máy chủ."
             );
         }
 
-        Resource resource =
-                new UrlResource(file.toUri());
+        Resource resource = new UrlResource(file.toUri());
 
         if (!resource.isReadable()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Không thể đọc ảnh."
+                    "Không thể đọc ảnh cũ."
             );
         }
 
-        MediaType contentType =
-                getContentType(filename);
-
         return ResponseEntity.ok()
-                .contentType(contentType)
+                .contentType(getContentType(filename))
                 .contentLength(Files.size(file))
                 .cacheControl(
                         CacheControl
@@ -181,9 +186,9 @@ public class AmenityImageController {
     }
 
     // ==========================================
-    // 3. ADMIN XÓA ẢNH ĐÃ TẢI LÊN
+    // 3. XÓA ẢNH CŨ HOẶC ẢNH CLOUDINARY
     //
-    // DELETE /api/uploads/amenities/{filename}
+    // Chỉ nhận UUID hoặc UUID + đuôi ảnh.
     // ==========================================
 
     @DeleteMapping("/{filename:.+}")
@@ -191,12 +196,63 @@ public class AmenityImageController {
             @PathVariable String filename
     ) throws IOException {
 
-        Path file = resolveSafeFile(filename);
+        if (filename == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Tên ảnh không hợp lệ."
+            );
+        }
 
-        if (!Files.deleteIfExists(file)) {
+        // Ảnh cũ lưu tại backend/uploads/amenities.
+        if (filename.matches(LEGACY_FILENAME_PATTERN)) {
+
+            Path file = resolveLegacyFile(filename);
+
+            if (!Files.deleteIfExists(file)) {
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy ảnh cũ."
+                );
+            }
+
+            return ResponseEntity.noContent().build();
+        }
+
+        // Ảnh Cloudinary có public_id dạng UUID.
+        if (!filename.matches(UUID_PATTERN)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Tên ảnh Cloudinary không hợp lệ."
+            );
+        }
+
+        String publicId =
+                "phugia/amenities/" + filename;
+
+        Map<?, ?> result;
+
+        try {
+            result = cloudinary.uploader().destroy(
+                    publicId,
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "invalidate", true
+                    )
+            );
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Không thể xóa ảnh trên Cloudinary.",
+                    e
+            );
+        }
+
+        if (!"ok".equals(
+                String.valueOf(result.get("result"))
+        )) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Không tìm thấy ảnh để xóa."
+                    "Không tìm thấy ảnh Cloudinary."
             );
         }
 
@@ -204,33 +260,25 @@ public class AmenityImageController {
     }
 
     // ==========================================
-    // 4. KIỂM TRA TÊN FILE AN TOÀN
-    //
-    // Chỉ cho phép tên UUID do Backend tạo.
+    // 4. KIỂM TRA ĐƯỜNG DẪN ẢNH CŨ
     // ==========================================
 
-    private Path resolveSafeFile(String filename) {
+    private Path resolveLegacyFile(String filename) {
 
         if (filename == null ||
-                !filename.matches(
-                        "(?i)[0-9a-f]{8}-" +
-                        "[0-9a-f]{4}-" +
-                        "[0-9a-f]{4}-" +
-                        "[0-9a-f]{4}-" +
-                        "[0-9a-f]{12}\\.(jpg|png|webp)"
-                )) {
+                !filename.matches(LEGACY_FILENAME_PATTERN)) {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Tên file không hợp lệ."
+                    "Tên file ảnh cũ không hợp lệ."
             );
         }
 
-        Path file = uploadDirectory
+        Path file = legacyUploadDirectory
                 .resolve(filename)
                 .normalize();
 
-        if (!file.getParent().equals(uploadDirectory)) {
+        if (!file.getParent().equals(legacyUploadDirectory)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Đường dẫn không hợp lệ."
@@ -241,7 +289,7 @@ public class AmenityImageController {
     }
 
     // ==========================================
-    // 5. KIỂM TRA ĐỊNH DẠNG ẢNH
+    // 5. NHẬN DIỆN ĐỊNH DẠNG ẢNH
     // ==========================================
 
     private String detectImageExtension(byte[] data) {
@@ -250,7 +298,6 @@ public class AmenityImageController {
                 (data[0] & 0xFF) == 0xFF &&
                 (data[1] & 0xFF) == 0xD8 &&
                 (data[2] & 0xFF) == 0xFF) {
-
             return "jpg";
         }
 
@@ -263,7 +310,6 @@ public class AmenityImageController {
                 data[5] == 0x0A &&
                 data[6] == 0x1A &&
                 data[7] == 0x0A) {
-
             return "png";
         }
 
@@ -276,7 +322,6 @@ public class AmenityImageController {
                 data[9] == 'E' &&
                 data[10] == 'B' &&
                 data[11] == 'P') {
-
             return "webp";
         }
 
@@ -284,7 +329,7 @@ public class AmenityImageController {
     }
 
     // ==========================================
-    // 6. CONTENT-TYPE KHI HIỂN THỊ
+    // 6. CONTENT TYPE CHO ẢNH CŨ
     // ==========================================
 
     private MediaType getContentType(String filename) {

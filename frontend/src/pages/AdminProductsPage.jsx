@@ -314,6 +314,7 @@ export default function AdminProductsPage() {
     }
   }
 
+  
   async function uploadFile(file, endpoint, csrf) {
     const formData = new FormData();
     formData.append("file", file);
@@ -343,13 +344,24 @@ export default function AdminProductsPage() {
     }
 
     const data = await response.json();
+    const url = String(data.url || "").trim();
 
-    if (!data.url || !data.url.startsWith(`${endpoint}/`)) {
-      throw new Error("Backend trả về đường dẫn tệp không hợp lệ.");
+    const isCloudinaryImage =
+      endpoint === "/api/uploads/amenities" &&
+      /^https:\/\/res\.cloudinary\.com\/jev1urnf\/image\/upload\//i.test(url);
+
+    const isLegacyFile =
+      url.startsWith(`${endpoint}/`);
+
+    if (!isCloudinaryImage && !isLegacyFile) {
+      throw new Error(
+        "Backend trả về đường dẫn tệp không hợp lệ."
+      );
     }
 
-    return data.url;
+    return url;
   }
+
 
   async function saveProduct() {
     if (busy) return;
