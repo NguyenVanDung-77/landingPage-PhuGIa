@@ -22,7 +22,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -91,7 +91,6 @@ public class SecurityConfig {
         );
 
         config.setAllowedHeaders(List.of("*"));
-
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
@@ -114,6 +113,11 @@ public class SecurityConfig {
 
         HttpSessionSecurityContextRepository contextRepository =
                 new HttpSessionSecurityContextRepository();
+
+        HttpSessionCsrfTokenRepository csrfRepository =
+                new HttpSessionCsrfTokenRepository();
+
+        csrfRepository.setHeaderName("X-XSRF-TOKEN");
 
         http
                 .cors(Customizer.withDefaults())
@@ -183,11 +187,11 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                // Lưu CSRF token trong session.
+                // Frontend lấy token qua /api/auth/csrf
+                // rồi gửi token trong header X-XSRF-TOKEN.
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(
-                                CookieCsrfTokenRepository
-                                        .withHttpOnlyFalse()
-                        )
+                        .csrfTokenRepository(csrfRepository)
                 )
 
                 .httpBasic(httpBasic ->
