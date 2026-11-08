@@ -9,13 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -32,6 +32,12 @@ public class ConsultationEmailService {
     @Value("${spring.mail.username:}")
     private String senderEmail;
 
+    @Value("${spring.mail.host:}")
+    private String smtpHost;
+
+    @Value("${spring.mail.port:0}")
+    private int smtpPort;
+
     public ConsultationEmailService(
             JavaMailSender mailSender,
             UserRepository userRepository
@@ -40,31 +46,58 @@ public class ConsultationEmailService {
         this.userRepository = userRepository;
     }
 
-    // =========================================
-    // GỬI THÔNG BÁO ĐẾN TẤT CẢ ADMIN
-    // =========================================
-
     public void notifyAllAdmins(
             Consultation consultation
     ) {
 
-        List<User> admins =
-                userRepository.findByRoleAndEnabledTrue(
-                        "ADMIN"
-                );
+        Long consultationId = consultation.getId();
 
-        if (admins.isEmpty()) {
-            log.warn(
-                    "Không tìm thấy tài khoản ADMIN đang hoạt động."
+        log.info(
+                "[MAIL] Bắt đầu gửi thông báo tư vấn #{}",
+                consultationId
+        );
+
+        log.info(
+                "[MAIL] SMTP host={}, port={}",
+                smtpHost,
+                smtpPort
+        );
+
+        if (senderEmail == null
+                || senderEmail.isBlank()) {
+
+            log.error(
+                    "[MAIL] Chưa cấu hình spring.mail.username"
             );
             return;
         }
 
-        if (senderEmail == null
-                || senderEmail.isBlank()) {
+        List<User> admins;
+
+        try {
+            admins =
+                    userRepository.findByRoleAndEnabledTrue(
+                            "ADMIN"
+                    );
+        } catch (Exception exception) {
+
             log.error(
-                    "Chưa cấu hình GMAIL_USERNAME. "
-                    + "Không thể gửi email tư vấn."
+                    "[MAIL] Không thể lấy danh sách ADMIN " +
+                    "cho tư vấn #{}",
+                    consultationId,
+                    exception
+            );
+            return;
+        }
+
+        log.info(
+                "[MAIL] Tìm thấy {} ADMIN đang hoạt động",
+                admins.size()
+        );
+
+        if (admins.isEmpty()) {
+            log.warn(
+                    "[MAIL] Không có ADMIN để nhận email"
             );
             return;
         }
@@ -73,6 +106,7 @@ public class ConsultationEmailService {
 
         int successCount = 0;
         int failureCount = 0;
+        int skippedCount = 0;
 
         for (User admin : admins) {
 
@@ -80,8 +114,12 @@ public class ConsultationEmailService {
 
             if (adminEmail == null
                     || adminEmail.isBlank()) {
+
+                skippedCount++;
+
                 log.warn(
-                        "ADMIN ID {} chưa có email.",
+                        "[MAIL] Bỏ qua ADMIN ID {} " +
+                        "vì chưa có email",
                         admin.getId()
                 );
                 continue;
@@ -89,16 +127,24 @@ public class ConsultationEmailService {
 
             adminEmail = adminEmail.trim();
 
-            // Không gửi trùng một địa chỉ email
-            if (!sentEmails.add(
-                    adminEmail.toLowerCase(
-                            java.util.Locale.ROOT
-                    )
-            )) {
+            String normalizedEmail =
+                    adminEmail.toLowerCase(Locale.ROOT);
+
+            if (!sentEmails.add(normalizedEmail)) {
+                skippedCount++;
                 continue;
             }
 
+            long startTime = System.currentTimeMillis();
+
             try {
+
+                log.info(
+                        "[MAIL] Đang gửi tư vấn #{} " +
+                        "đến ADMIN ID {}",
+                        consultationId,
+                        admin.getId()
+                );
 
                 SimpleMailMessage mail =
                         new SimpleMailMessage();
@@ -107,34 +153,29 @@ public class ConsultationEmailService {
                 mail.setTo(adminEmail);
 
                 mail.setSubject(
-                        "[PHU GIA ROYAL PARK] "
-                        + "Yeu cau tu van moi #"
-                        + consultation.getId()
+                        "[PHU GIA ROYAL PARK] " +
+                        "Yeu cau tu van moi #" +
+                        consultationId
                 );
 
                 String content =
-                        "PHU GIA ROYAL PARK\n\n"
-                        + "Co khach hang vua dang ky tu van.\n\n"
-                        + "Ma yeu cau: "
-                        + consultation.getId()
-                        + "\n"
-                        + "Ho ten: "
-                        + safe(consultation.getFullName())
-                        + "\n"
-                        + "So dien thoai: "
-                        + safe(consultation.getPhone())
-                        + "\n"
-                        + "Email: "
-                        + safe(consultation.getEmail())
-                        + "\n"
-                        + "Noi dung: "
-                        + safe(consultation.getMessage())
-                        + "\n"
-                        + "Trang thai: "
-                        + safe(consultation.getStatus())
-                        + "\n\n"
-                        + "Vui long dang nhap trang quan tri "
-                        + "de xu ly yeu cau.\n";
+                        "PHU GIA ROYAL PARK\n\n" +
+                        "Co khach hang vua dang ky tu van.\n\n" +
+                        "Ma yeu cau: " +
+                        consultationId +
+                        "\nHo ten: " +
+                        safe(consultation.getFullName()) +
+                        "\nSo dien thoai: " +
+                        safe(consultation.getPhone()) +
+                        "\nEmail: " +
+                        safe(consultation.getEmail()) +
+                        "\nNoi dung: " +
+                        safe(consultation.getMessage()) +
+                        "\nTrang thai: " +
+                        safe(consultation.getStatus()) +
+                        "\n\n" +
+                        "Vui long dang nhap trang quan tri " +
+                        "de xu ly yeu cau.\n";
 
                 mail.setText(content);
 
@@ -142,32 +183,53 @@ public class ConsultationEmailService {
 
                 successCount++;
 
+                long duration =
+                        System.currentTimeMillis() - startTime;
+
                 log.info(
-                        "Đã gửi thông báo tư vấn #{} đến {}",
-                        consultation.getId(),
-                        adminEmail
+                        "[MAIL] SUCCESS - Tu van #{} " +
+                        "ADMIN ID {} - {} ms",
+                        consultationId,
+                        admin.getId(),
+                        duration
                 );
 
-            } catch (MailException exception) {
+            } catch (Exception exception) {
 
                 failureCount++;
 
+                long duration =
+                        System.currentTimeMillis() - startTime;
+
                 log.error(
-                        "Không thể gửi thông báo tư vấn #{} "
-                        + "đến {}: {}",
-                        consultation.getId(),
-                        adminEmail,
-                        exception.getMessage()
+                        "[MAIL] FAILED - Tu van #{} " +
+                        "ADMIN ID {} - {} ms",
+                        consultationId,
+                        admin.getId(),
+                        duration
+                );
+
+                log.error(
+                        "[MAIL] Loai loi: {}",
+                        exception.getClass().getName()
+                );
+
+                log.error(
+                        "[MAIL] Chi tiet loi gui Gmail " +
+                        "cho tu van #{}",
+                        consultationId,
+                        exception
                 );
             }
         }
 
         log.info(
-                "Kết quả gửi tư vấn #{}: "
-                + "thành công {}, thất bại {}",
-                consultation.getId(),
+                "[MAIL] KET QUA - Tu van #{}: " +
+                "Thanh cong={}, That bai={}, Bo qua={}",
+                consultationId,
                 successCount,
-                failureCount
+                failureCount,
+                skippedCount
         );
     }
 
